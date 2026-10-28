@@ -35,8 +35,14 @@ class CandidateTest(unittest.TestCase):
         with self.assertRaises(AssertionError): verify_payload(self.root, {'revision': 'b' * 40})
 
     def test_unlisted_payload(self):
-        (self.root / 'repository/unlisted').write_bytes(b'other')
+        (self.root / 'repository/unlisted.klib').write_bytes(b'other')
         with self.assertRaises(AssertionError): verify_payload(self.root, self.pin)
+
+    def test_maven_sidecars_are_not_payloads(self):
+        (self.root / 'repository/payload.klib.asc').write_bytes(b'signature')
+        (self.root / 'repository/payload.klib.sha256').write_text(hashlib.sha256(b'fixture').hexdigest())
+        (self.root / 'repository/maven-metadata.xml').write_text('<metadata/>')
+        verify_payload(self.root, self.pin)
 
     def test_traversal(self):
         self.manifest['repository']['files'][0]['path'] = '../evidence.json'

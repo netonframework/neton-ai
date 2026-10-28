@@ -24,7 +24,9 @@ def verify_payload(directory, pin):
         seen.add(file)
         assert file.stat().st_size == item['size']
         assert hashlib.sha256(file.read_bytes()).hexdigest() == item['sha256']
-    assert seen == {p.resolve() for p in repository.rglob('*') if p.is_file()}
+    # Core manifests signed payloads, not Maven metadata/checksum/signature sidecars.
+    assert seen == {p.resolve() for p in repository.rglob('*')
+                    if p.is_file() and p.suffix in {'.pom', '.module', '.jar', '.klib'}}
     return manifest['version'], repository
 
 
