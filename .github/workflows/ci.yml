@@ -31,6 +31,7 @@ jobs:
         run: |
           ./gradlew --no-daemon :neton-ai:checkKotlinAbi
           python3 tools/check_contract.py
+          python3 -m unittest discover -s tools -p 'test_*.py'
       - uses: actions/upload-artifact@v4
         if: always()
         with:

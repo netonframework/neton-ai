@@ -38,3 +38,4 @@ deterministic protocol replays, not certification of live third-party services.
    then create the corresponding release/tag. Do not claim these steps occurred from CI alone.
 
 No automatic tag-triggered publication, framework release or mutable latest dependency is used.
+Central staging semantics follow the [official Publisher API](https://central.sonatype.org/publish/publish-portal-api/).
