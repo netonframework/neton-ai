@@ -7,7 +7,9 @@ repositories {
 }
 
 kotlin {
-    compilerOptions { optIn.add("neton.ai.ExperimentalNetonAiApi") }
+    if (providers.gradleProperty("ai.consumerOptIn").orNull != "false") {
+        compilerOptions { optIn.add("neton.ai.ExperimentalNetonAiApi") }
+    }
     listOf(macosArm64(), macosX64(), linuxX64(), linuxArm64(), mingwX64()).forEach { target ->
         target.binaries {
             executable {
@@ -29,7 +31,7 @@ kotlin {
 
         commonMain {
             dependencies {
-                implementation(project(":neton-http"))
+                implementation("com.netonstream:neton-http:${providers.gradleProperty("netonVersion").get()}")
                 // HttpClient.create { } and http { } are neton-http's built-in engine.
                 implementation(project(":neton-ai"))
                 implementation(libs.kotlinx.coroutines.core)

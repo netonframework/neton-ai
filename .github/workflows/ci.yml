@@ -1,0 +1,48 @@
+name: AI CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-15, target: macosArm64, taskTarget: MacosArm64 }
+          - { os: ubuntu-latest, target: linuxX64, taskTarget: LinuxX64 }
+          - { os: windows-latest, target: mingwX64, taskTarget: MingwX64 }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/wrapper-validation@v3
+      - name: Select Apple toolchain
+        if: runner.os == 'macOS'
+        run: echo "DEVELOPER_DIR=/Applications/Xcode_16.4.app/Contents/Developer" >> "$GITHUB_ENV"
+      - name: Test and link consumer with published framework
+        shell: bash
+        run: ./gradlew --no-daemon :neton-ai:${{ matrix.target }}Test :neton-ai:checkProtocolLayering :examples:neton-ai-sample:linkDebugExecutable${{ matrix.taskTarget }}
+      - name: Check full ABI and opt-in boundary
+        if: runner.os == 'macOS'
+        run: |
+          ./gradlew --no-daemon :neton-ai:checkKotlinAbi
+          python3 tools/check_contract.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ai-${{ matrix.target }}-${{ github.sha }}
+          path: neton-ai/build/test-results/
+          if-no-files-found: error
+  gates:
+    name: AI gates
+    needs: native
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: test "$RESULT" = success
+        env:
+          RESULT: ${{ needs.native.result }}

@@ -36,11 +36,11 @@ kotlin {
 
         commonMain {
             dependencies {
-                implementation(project(":neton-core"))
-                implementation(project(":neton-logging"))
-                implementation(project(":neton-http"))
+                api("com.netonstream:neton-core:${providers.gradleProperty("netonVersion").get()}")
+                implementation("com.netonstream:neton-logging:${providers.gradleProperty("netonVersion").get()}")
+                api("com.netonstream:neton-http:${providers.gradleProperty("netonVersion").get()}")
                 // SigV4（HMAC-SHA256）与 Google 服务账号 JWT（RS256）复用框架的加密原语
-                implementation(project(":neton-security"))
+                implementation("com.netonstream:neton-security:${providers.gradleProperty("netonVersion").get()}")
                 implementation(libs.kotlinx.coroutines.core)
                 // 协议层的公开类型（IR、报文）直接暴露 JsonObject
                 api(libs.kotlinx.serialization.json)
