@@ -8,7 +8,18 @@ val netonVersion = providers.gradleProperty("netonVersion").get()
 require(aiVersion != netonVersion) { "AI and Framework have independent version lines" }
 
 subprojects {
-    repositories { mavenCentral() }
+    repositories {
+        mavenCentral()
+        val candidate = providers.gradleProperty("neton.repository").orNull
+            ?: providers.environmentVariable("NETON_CANDIDATE_REPOSITORY").orNull
+        candidate?.let { path ->
+            require(file(path).isDirectory) { "Missing candidate repository: $path" }
+            exclusiveContent {
+                forRepository { maven { url = uri(path) } }
+                filter { includeModuleByRegex("com[.]netonstream", "neton(-.*)?") }
+            }
+        }
+    }
     group = "com.netonstream"
     version = aiVersion
     plugins.withId("org.jetbrains.kotlin.multiplatform") {

@@ -2,8 +2,22 @@ name: AI CI
 on: [push, pull_request]
 permissions:
   contents: read
+  actions: read
 jobs:
+  framework:
+    name: Require pinned Framework candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for exact core candidate gates
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN=$(python3 -c 'import json; print(json.load(open("tools/framework-candidate.json"))["run"])')
+          gh run watch "$RUN" --repo netonframework/neton --exit-status --interval 60
   native:
+    needs: framework
     strategy:
       fail-fast: false
       matrix:
@@ -15,6 +29,11 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+      - name: Verify pinned signed framework candidate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/framework_candidate.py "$RUNNER_TEMP/framework-candidate"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -23,7 +42,7 @@ jobs:
       - name: Select Apple toolchain
         if: runner.os == 'macOS'
         run: echo "DEVELOPER_DIR=/Applications/Xcode_16.4.app/Contents/Developer" >> "$GITHUB_ENV"
-      - name: Test and link consumer with published framework
+      - name: Test and link consumer with verified framework candidate
         shell: bash
         run: ./gradlew --no-daemon :neton-ai:${{ matrix.target }}Test :neton-ai:checkProtocolLayering :examples:neton-ai-sample:linkDebugExecutable${{ matrix.taskTarget }}
       - name: Check full ABI and opt-in boundary
@@ -40,10 +59,11 @@ jobs:
           if-no-files-found: error
   gates:
     name: AI gates
-    needs: native
+    needs: [framework, native]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - run: test "$RESULT" = success
+      - run: test "$FRAMEWORK" = success && test "$RESULT" = success
         env:
+          FRAMEWORK: ${{ needs.framework.result }}
           RESULT: ${{ needs.native.result }}

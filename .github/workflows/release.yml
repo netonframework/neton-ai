@@ -27,6 +27,8 @@ jobs:
           REQUESTED_VERSION: ${{ inputs.version }}
         run: |
           test "$GITHUB_REF" = refs/heads/main
+          # Candidate-only CI is not evidence for release against a different published version.
+          test ! -f tools/framework-candidate.json || { echo 'Switch CI to the supported published Framework version before staging AI'; exit 1; }
           test "$REQUESTED_VERSION" = "$(sed -n 's/^aiVersion=//p' gradle.properties)"
           test "$(gh api repos/$GITHUB_REPOSITORY/commits/main --jq .sha)" = "$GITHUB_SHA"
           gh run list --workflow ci.yml --commit "$GITHUB_SHA" --json conclusion --jq 'any(.[]; .conclusion == "success")' | grep -qx true

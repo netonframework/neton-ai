@@ -5,3 +5,5 @@
 *.iml
 .DS_Store
 local.properties
+__pycache__/
+*.pyc
